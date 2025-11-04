@@ -1,11 +1,16 @@
-/* Sample from https://www.jenkins.io/doc/pipeline/tour/hello-world/ */
+/* Use "make" in our own container image */
 /* Requires the Docker Pipeline plugin */
 pipeline {
-    agent { docker { image 'python:3.14.0-alpine3.22' } }
+    agent {
+        dockerfile {
+            filename 'Dockerfile'
+            dir 'pipeline'
+        }
+    }
     stages {
         stage('build') {
             steps {
-                sh 'python --version'
+                sh 'make build'
             }
         }
     }
