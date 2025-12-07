@@ -4,4 +4,4 @@ help:
 
 .PHONY: build
 build:
-	@echo "Hello from Makefile build target"
+	@echo "Hello from Makefile, running inside a Jenkins agent container"

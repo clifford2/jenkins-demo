@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: © 2024 Clifford Weinmann <https://www.cliffordweinmann.com/>
 # SPDX-License-Identifier: MIT-0
 
+.git/
 target/
 pom.xml.tag
 pom.xml.releaseBackup

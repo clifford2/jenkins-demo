@@ -1,0 +1,59 @@
+---
+# version: "3.9"
+name: "jenkins"
+
+networks:
+  jenkins:
+
+volumes:
+  jenkins-docker-certs:
+  jenkins-data:
+
+services:
+
+  docker:
+    image: "docker.io/library/docker:28.5.1-dind"
+    privileged: true
+    networks:
+      jenkins:
+        aliases:
+          - "docker"
+    environment:
+      DOCKER_TLS_CERTDIR: "/certs"
+    volumes:
+      - "jenkins-docker-certs:/certs/client"
+      - "jenkins-data:/var/jenkins_home"
+    expose:
+      - "2376/tcp"
+    restart: "always"
+
+  jenkins:
+    image: "myjenkins:2.528.1-3"
+    build:
+      context: .
+    networks:
+      - "jenkins"
+    environment:
+      DOCKER_HOST: "tcp://docker:2376"
+      DOCKER_CERT_PATH: "/certs/client"
+      DOCKER_TLS_VERIFY: "1"
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - "jenkins-docker-certs:/certs/client:ro"
+      - "jenkins-data:/var/jenkins_home"
+    restart: "always"
+    depends_on:
+      - "docker"
+
+  # OPTIONAL: add Sonatype Nexus repository
+  nexus:
+    image: "docker.io/sonatype/nexus3:3.86.2-java17-ubi"
+    networks:
+      - "jenkins"
+    ports:
+      - "8081:8081"
+    restart: "always"
+    volumes:
+      - "nexus-data:/nexus-data"

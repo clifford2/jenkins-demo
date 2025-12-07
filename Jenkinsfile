@@ -4,7 +4,7 @@ pipeline {
     agent {
         dockerfile {
             filename 'Dockerfile'
-            dir 'pipeline'
+            dir 'agent'
         }
     }
     stages {

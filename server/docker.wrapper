@@ -1,0 +1,45 @@
+#!/usr/bin/bash
+# Wrapper around Docker CLI in Jenkins server to pass DOCKER_HOST related
+# environment to agent containers, so it can also reach the Docker host
+# (DinD) to run builds.
+
+if [ "$1" = "run" -a ! -z "${DOCKER_HOST}" ]
+then
+	new_host="${DOCKER_HOST}"
+	if [[ "${DOCKER_HOST}" == tcp://* ]]
+	then
+		noproto=$(echo "${DOCKER_HOST}" | sed -e 's|^tcp://||')
+		host=$(echo "${noproto}" | cut -d: -f1)
+		port=$(echo "${noproto}" | cut -d: -f2)
+		if [ ! -z "${host}" -a ! -z "${port}" ]
+		then
+			ip=$(getent hosts "${host}" | awk '{print $1}')
+			if [ ! -z "${ip}" ]
+			then
+				new_host="tcp://${ip}:${port}"
+			fi
+		fi
+	fi
+	# echo "[${new_host}]"
+	docker_args="-e DOCKER_HOST=${new_host}"
+	if [ ! -z "${DOCKER_CERT_PATH}" ]
+	then
+		docker_args="${docker_args} -v ${DOCKER_CERT_PATH}:${DOCKER_CERT_PATH} -e DOCKER_CERT_PATH=${DOCKER_CERT_PATH}"
+	fi
+	if [ ! -z "${DOCKER_TLS_VERIFY}" ]
+	then
+		docker_args="${docker_args} -e DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY}"
+	fi
+	grep -q 'ExtServers' /etc/resolv.conf
+	# Examples:
+	# # ExtServers: [10.60.125.130 10.60.125.131]
+	# # ExtServers: [host(192.168.122.1)]
+	if [ $? -eq 0 ]
+	then
+		docker_args="${docker_args} --dns $(grep 'ExtServers' /etc/resolv.conf | cut -d[ -f2- | cut -d] -f1 | cut -d'(' -f2- | cut -d')' -f1 | sed -e 's| | --dns |g')"
+	fi
+	shift
+	/usr/bin/docker.bin run ${docker_args} "$@"
+else
+	/usr/bin/docker.bin "$@"
+fi
